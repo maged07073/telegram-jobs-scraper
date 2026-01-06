@@ -4,7 +4,12 @@ import asyncio
 import re
 import os
 from datetime import timezone
+import base64
 
+session_b64 = os.environ.get("TELEGRAM_SESSION")
+if session_b64:
+    with open("session.session", "wb") as f:
+        f.write(base64.b64decode(session_b64))
 # ====== بيانات سرية من GitHub Secrets ======
 api_id = int(os.environ["API_ID"])
 api_hash = os.environ["API_HASH"]
