@@ -1,16 +1,17 @@
-name: Telegram Jobs Scraper
+name: Telegram Job Scraper
 
 on:
   schedule:
-    - cron: "*/7 * * * *"
-  workflow_dispatch:
+    - cron: "*/7 * * * *"   # كل 7 دقائق
+  workflow_dispatch:       # تشغيل يدوي (اختياري)
 
 jobs:
-  scrape:
+  run-scraper:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -19,19 +20,21 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install telethon
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Run scraper
         env:
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}
+          TELEGRAM_SESSION: ${{ secrets.TELEGRAM_SESSION }}
         run: |
           python scraper.py
 
-      - name: Commit & Push
+      - name: Commit and push changes
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
           git add jobs.json
-          git commit -m "Auto update jobs" || echo "No changes"
+          git commit -m "🔄 تحديث الوظائف تلقائيًا" || echo "لا يوجد تحديث"
           git push
