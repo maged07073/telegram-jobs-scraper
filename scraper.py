@@ -3,14 +3,18 @@ import json
 import asyncio
 import re
 import os
-from datetime import timezone
 import base64
+from datetime import timezone
+
+# ====== Session ======
+SESSION_NAME = "telegram"
 
 session_b64 = os.environ.get("TELEGRAM_SESSION")
 if session_b64:
-    with open("session.session", "wb") as f:
+    with open(f"{SESSION_NAME}.session", "wb") as f:
         f.write(base64.b64decode(session_b64))
-# ====== بيانات سرية من GitHub Secrets ======
+
+# ====== بيانات سرية ======
 api_id = int(os.environ["API_ID"])
 api_hash = os.environ["API_HASH"]
 
@@ -40,9 +44,9 @@ email_regex = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
 phone_regex = r"(?:\+966|0)?5\d{8}"
 link_regex = r"(https?://[^\s]+)"
 
-client = TelegramClient("session", api_id, api_hash)
+client = TelegramClient(SESSION_NAME, api_id, api_hash)
 
-# ====== تحميل الوظائف الحالية ======
+# ====== وظائف ======
 def load_jobs():
     if os.path.exists("jobs.json"):
         with open("jobs.json", "r", encoding="utf-8") as f:
@@ -56,7 +60,7 @@ def save_jobs(jobs):
 def is_duplicate(jobs, text):
     return any(text == job["description"] for job in jobs)
 
-# ====== جلب الرسائل ======
+# ====== الجلب ======
 async def fetch_jobs():
     jobs = load_jobs()
 
@@ -79,8 +83,8 @@ async def fetch_jobs():
                             "email": next(iter(re.findall(email_regex, text)), ""),
                             "phone": next(iter(re.findall(phone_regex, text)), ""),
                             "link": next(iter(re.findall(link_regex, text)), ""),
-                            "date": msg.date.astimezone(timezone.utc).strftime("%Y-%m-%d"),
-                            "time": msg.date.astimezone(timezone.utc).strftime("%H:%M")
+                            "date": msg.date.astimezone(timezone.utc).strftime("%Y-%m-%d") if msg.date else "",
+                            "time": msg.date.astimezone(timezone.utc).strftime("%H:%M") if msg.date else ""
                         }
                         jobs.append(job)
                         print(f"✅ وظيفة جديدة: {key} من {channel}")
