@@ -73,3 +73,38 @@ async def fetch_jobs():
 
             for msg in messages:
                 text = msg.message
+                if not text or is_duplicate(jobs, text):
+                    continue
+
+                for key in keywords:
+                    if key.lower() in text.lower():
+                        job = {
+                            "title": key,
+                            "description": text,
+                            "company": channel,
+                            "email": next(iter(re.findall(email_regex, text)), ""),
+                            "phone": next(iter(re.findall(phone_regex, text)), ""),
+                            "link": next(iter(re.findall(link_regex, text)), ""),
+                            "date": msg.date.astimezone(timezone.utc).strftime("%Y-%m-%d") if msg.date else "",
+                            "time": msg.date.astimezone(timezone.utc).strftime("%H:%M") if msg.date else ""
+                        }
+                        jobs.append(job)
+                        print(f"✅ وظيفة جديدة: {key} من {channel}")
+                        break
+
+        except Exception as e:
+            print(f"❌ خطأ في {channel}: {e}")
+
+    save_jobs(jobs)
+
+# ====== التشغيل ======
+async def main():
+    await client.connect()
+
+    if not await client.is_user_authorized():
+        raise RuntimeError("❌ Session غير صالحة أو لم يتم تسجيل الدخول بها مسبقًا")
+
+    await fetch_jobs()
+    await client.disconnect()
+
+asyncio.run(main())
