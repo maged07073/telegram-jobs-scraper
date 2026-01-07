@@ -10,9 +10,11 @@ from datetime import timezone
 SESSION_NAME = "telegram"
 
 session_b64 = os.environ.get("TELEGRAM_SESSION")
-if session_b64:
-    with open(f"{SESSION_NAME}.session", "wb") as f:
-        f.write(base64.b64decode(session_b64))
+if not session_b64:
+    raise RuntimeError("❌ TELEGRAM_SESSION غير موجود في Secrets")
+
+with open(f"{SESSION_NAME}.session", "wb") as f:
+    f.write(base64.b64decode(session_b64))
 
 # ====== بيانات سرية ======
 api_id = int(os.environ["API_ID"])
@@ -71,33 +73,3 @@ async def fetch_jobs():
 
             for msg in messages:
                 text = msg.message
-                if not text or is_duplicate(jobs, text):
-                    continue
-
-                for key in keywords:
-                    if key.lower() in text.lower():
-                        job = {
-                            "title": key,
-                            "description": text,
-                            "company": channel,
-                            "email": next(iter(re.findall(email_regex, text)), ""),
-                            "phone": next(iter(re.findall(phone_regex, text)), ""),
-                            "link": next(iter(re.findall(link_regex, text)), ""),
-                            "date": msg.date.astimezone(timezone.utc).strftime("%Y-%m-%d") if msg.date else "",
-                            "time": msg.date.astimezone(timezone.utc).strftime("%H:%M") if msg.date else ""
-                        }
-                        jobs.append(job)
-                        print(f"✅ وظيفة جديدة: {key} من {channel}")
-                        break
-
-        except Exception as e:
-            print(f"❌ خطأ في {channel}: {e}")
-
-    save_jobs(jobs)
-
-# ====== التشغيل ======
-async def main():
-    async with client:
-        await fetch_jobs()
-
-asyncio.run(main())
